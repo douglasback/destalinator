@@ -40,8 +40,10 @@ def destalinate_job():
             scheduled_archiver.archive()
             print("Announcing")
             scheduled_announcer.announce()
-            print("Flagging")
-            scheduled_flagger.flag()
+            # Disabling the flagger, because let's only introduce 3 new things
+            # at a time:
+            # print("Flagging")
+            # scheduled_flagger.flag()
             print("OK: destalinated")
         except Exception as e:  # pylint: disable=W0703
             raven_client.captureException()

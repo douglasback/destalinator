@@ -12,21 +12,17 @@ import config
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 
-
-# logging.getLogger("requests").setLevel(logging.DEBUG)
-# logging.getLogger("requests").addHandler(logging.StreamHandler())
-
-
-# logging.basicConfig(filename='stale.log')
-# logging.getLogger().setLevel(logging.DEBUG)
-# logging.getLogger("requests").setLevel(logging.DEBUG)
-requests_log = logging.getLogger("urllib3.connectionpool")
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-handler = logging.FileHandler('requests.log')
-handler.setFormatter(formatter)
-requests_log.addHandler(handler)
-requests_log.setLevel(logging.DEBUG)
-requests_log.propagate = False
+"""
+Uncomment the lines below in order to debug rate-limiting or
+HTTP connection problems
+"""
+# requests_log = logging.getLogger("urllib3.connectionpool")
+# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+# handler = logging.FileHandler('requests.log')
+# handler.setFormatter(formatter)
+# requests_log.addHandler(handler)
+# requests_log.setLevel(logging.DEBUG)
+# requests_log.propagate = False
 
 headers = {
     'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36"
