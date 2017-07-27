@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-
+from __future__ import unicode_literals
 from datetime import datetime, date
 import os
 import re
@@ -236,7 +236,8 @@ class Destalinator(object):
         if self.destalinator_activated:
             self.post_marked_up_message(channel_name, self.warning_text, message_type='channel_warning')
             self.action("Warned #{}".format(channel_name))
-
+        else:
+            self.debug("#{} is stale, would have warned, but Destalinator is not active".format(channel_name))
         return True
 
     def warn_all(self, days, force_warn=False):

@@ -58,3 +58,4 @@ target/
 
 # Where to store your personal API token
 *_token.txt
+.secrets

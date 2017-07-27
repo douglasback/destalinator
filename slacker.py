@@ -4,11 +4,33 @@ import json
 import logging
 import re
 import time
-
+from time import sleep
 import requests
 
 import config
 
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+
+
+# logging.getLogger("requests").setLevel(logging.DEBUG)
+# logging.getLogger("requests").addHandler(logging.StreamHandler())
+
+
+# logging.basicConfig(filename='stale.log')
+# logging.getLogger().setLevel(logging.DEBUG)
+# logging.getLogger("requests").setLevel(logging.DEBUG)
+requests_log = logging.getLogger("urllib3.connectionpool")
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+handler = logging.FileHandler('requests.log')
+handler.setFormatter(formatter)
+requests_log.addHandler(handler)
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = False
+
+headers = {
+    'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36"
+}
 
 class Slacker(object):
 
@@ -19,6 +41,14 @@ class Slacker(object):
         """
         self.slack_name = slack_name
         self.token = token
+        self.session = requests.Session()
+        retries = Retry(total=40,
+                connect=20,
+                read=20,
+                respect_retry_after_header=True,
+                status_forcelist=[ 429, 500, 502, 503, 504 ])
+        self.session.mount('https://', HTTPAdapter(max_retries=retries))
+
         assert self.token, "Token should not be blank"
         self.logger = logger or logging.getLogger(__name__)
         self.url = self.api_url()
@@ -29,12 +59,12 @@ class Slacker(object):
 
     def get_emojis(self):
         url = self.url + "emoji.list?token={}".format(self.token)
-        payload = requests.get(url).json()
+        payload = self.__request__(url).json()
         return payload
 
     def get_user(self, uid):
         url = self.url + "users.info?token={}&user={}".format(self.token, uid)
-        payload = requests.get(url).json()
+        payload = self.__request__(url).json()
         return payload
 
     def get_users(self):
@@ -69,7 +99,7 @@ class Slacker(object):
                 murl += "&latest={}".format(latest)
             else:
                 murl += "&latest={}".format(int(time.time()))
-            payload = requests.get(murl).json()
+            payload = self.__request__(murl).json()
             messages += payload['messages']
             if payload['has_more'] is False:
                 done = True
@@ -145,7 +175,7 @@ class Slacker(object):
     def delete_message(self, cid, message_timestamp):
         url_template = self.url + "chat.delete?token={}&channel={}&ts={}"
         url = url_template.format(self.token, cid, message_timestamp)
-        ret = requests.get(url).json()
+        ret = self.__request__(url).json()
         if not ret['ok']:
             self.logger.error("Failed to delete message; error: %s", ret)
         return ret['ok']
@@ -181,7 +211,7 @@ class Slacker(object):
         cid = self.get_channelid(channel_name)
         now = int(time.time())
         url = url_template.format(self.token, cid)
-        ret = requests.get(url).json()
+        ret = self.__request__(url).json()
         if ret['ok'] is not True:
             m = "Attempted to get channel info for {}, but return was {}"
             m = m.format(channel_name, ret)
@@ -203,20 +233,20 @@ class Slacker(object):
         else:
             exclude_archived = 0
         url = url_template.format(exclude_archived, self.token)
-        request = requests.get(url)
+        request = self.__request__(url)
         payload = request.json()
         assert 'channels' in payload
         return payload['channels']
 
     def get_all_user_objects(self):
         url = self.url + "users.list?token=" + self.token
-        return requests.get(url).json()['members']
+        return self.__request__(url).json()['members']
 
     def archive(self, channel_name):
         url_template = self.url + "channels.archive?token={}&channel={}"
         cid = self.get_channelid(channel_name)
         url = url_template.format(self.token, cid)
-        request = requests.get(url)
+        request = self.__request__(url)
         payload = request.json()
         return payload
 
@@ -251,3 +281,14 @@ class Slacker(object):
 
         p = requests.post(self.url + "chat.postMessage", data=post_data)
         return p.json()
+
+
+    def __request__(self, url, **kwargs):
+        # print "Making request to {}".format(url)
+        sleep(.5)
+        response = self.session.get(url, timeout=(3,10), headers=headers, **kwargs)
+        if response.ok is not True:
+            print 'URL {} returned status {}'.format(url, response.status_code)
+            print 'Reponse text: {}'.format(response.text)
+        return response
+

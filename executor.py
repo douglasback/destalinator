@@ -12,7 +12,7 @@ import utils
 
 class Executor(object):
 
-    def __init__(self, debug=False, verbose=False, slackbot_injected=None, slacker_injected=None):
+    def __init__(self, debug=True, verbose=True, slackbot_injected=None, slacker_injected=None):
         self.debug = debug
         self.verbose = verbose
         self.config = config.Config()
@@ -30,7 +30,7 @@ class Executor(object):
 
         self.destalinator_activated = False
         if os.getenv(self.config.destalinator_activated_env_varname):
-            self.destalinator_activated = True
+            self.destalinator_activated = False
         self.logger.debug("destalinator_activated is %s", self.destalinator_activated)
 
         self.slacker = slacker_injected or slacker.Slacker(config.SLACK_NAME, token=api_token, logger=self.logger)
